@@ -27,6 +27,7 @@ end
 
 V1_indices = (J<30)';
 V2_indices = ~V1_indices;
+Jhat = J;
 
 %% EM-style algorithm to fit two Lyapunov functions
 
@@ -42,8 +43,11 @@ while (1)
   plot3(S(1,V1_indices),S(2,V1_indices),J(V1_indices),'r.');
   plot3(S(1,V2_indices),S(2,V2_indices),J(V2_indices),'b.');
   
-  plot3(S(1,V1_indices),S(2,V1_indices),V1,'g.');
-  plot3(S(1,V2_indices),S(2,V2_indices),V2,'m.');
+  Jhat(V1_indices) = V1;
+  Jhat(V2_indices) = V2;
+  mesh(xbins{1},xbins{2},reshape(Jhat,length(xbins{1}),length(xbins{2}))')
+%  plot3(S(1,V1_indices),S(2,V1_indices),V1,'g.');
+%  plot3(S(1,V2_indices),S(2,V2_indices),V2,'m.');
   axis tight; drawnow;
   
 %  V1_indices_next = (J'-alpha1'*phi).^2 < (J'-alpha2'*phi).^2;

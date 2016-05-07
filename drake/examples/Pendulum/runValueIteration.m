@@ -6,7 +6,7 @@ options.gamma = .999;
 options.wrap_flag = [true;false];
 %cost = @mintime; ulimit = 1;
 cost = @lqrcost; ulimit = 10; % = 5 converges faster (but pumps less)
-xbins = {linspace(0,2*pi,101),linspace(-10,10,101)};
+xbins = {linspace(0,2*pi,101),linspace(-18,18,101)};
 ubins = linspace(-ulimit,ulimit,51);
 mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,ubins,options);
 
