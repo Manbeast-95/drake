@@ -57,7 +57,7 @@ model.A(no_normal_force_ub_inds,normal_force_inds) = eye(nc);
 model.A(no_normal_force_ub_inds,binary_normal_inds) = -eye(nc)*bigM;
 % rhs = 0 already
 
-%% 0 <= phi + h*n*vn <= binary_normal*bigM
+%% 0 <= phi + h*n*vn <= (1 - binary_normal)*bigM
 model.A(nonpen_ub_inds,binary_normal_inds) = eye(nc)*bigM;
 
 %% -binary_neg_slide*bigM <= dk*vn <= binary_pos_slide*bigM 
