@@ -29,16 +29,40 @@ tool.  Thank you for your patience.
 Overview
 ********
 
-Drake ("dragon" in Middle English) is a toolbox started by the
-`Robot Locomotion Group <http://groups.csail.mit.edu/locomotion/>`_ at the MIT Computer Science and Artificial Intelligence Lab (CSAIL).  The :doc:`development team has now
-grown significantly </credits>`, with core development led by the `Toyota Research Institute <http://tri.global/>`__.
-It is a collection of tools for analyzing the dynamics of our robots and building control systems for them in MATLAB and C++, with a heavy emphasis on optimization-based design/analysis.
+Drake ("dragon" in Middle English) is a toolbox started by the `Robot
+Locomotion Group <http://groups.csail.mit.edu/locomotion/>`_ at the
+MIT Computer Science and Artificial Intelligence Lab (CSAIL).  The
+:doc:`development team has now grown significantly </credits>`, with
+core development led by the `Toyota Research Institute
+<http://tri.global/>`__.  It is a library of tools in C++ for
+analyzing the dynamics of our robots and building control systems for
+them, with a heavy emphasis on optimization-based design/analysis.
 
-While there are an increasing number of simulation tools available for robotics, most of them function like a black box: commands go in, sensors come out.  Drake aims to simulate even very complex dynamics of robots (e.g. including friction, contact, aerodynamics, ...), but always with an emphasis on exposing the structure in the governing equations (sparsity, analytical gradients, polynomial structure, uncertainty quantification, ...) and making this information available for advanced planning, control, and analysis algorithms.  Drake provides interfaces to high-level languages (MATLAB, Python, ...) to enable rapid-prototyping of new algorithms, and also aims to provide solid open-source implementations for many state-of-the-art algorithms.  Finally, we hope Drake provides many compelling examples that can help people get started and provide much needed benchmarks.   We are excited to accept user contributions to improve the coverage.
+While there are an increasing number of simulation tools available for
+robotics, most of them function like a black box: commands go in,
+sensors come out.  Drake aims to simulate even very complex dynamics
+of robots (e.g. including friction, contact, aerodynamics, ...), but
+always with an emphasis on exposing the structure in the governing
+equations (sparsity, analytical gradients, polynomial structure,
+uncertainty quantification, ...) and making this information available
+for advanced planning, control, and analysis algorithms.  Drake
+provides interfaces to high-level languages (MATLAB, Python, ...) to
+enable rapid-prototyping of new algorithms, and also aims to provide
+solid open-source implementations for many state-of-the-art
+algorithms.  Finally, we hope Drake provides many compelling examples
+that can help people get started and provide much needed benchmarks.
+We are excited to accept user contributions to improve the coverage.
 
 Here is a quick summary of capabilities:
 
-* Simulation
+* Optimization Programming Interface
+        * Provides clean "Mathematical Program" class interface for
+	  LP, QP, SDP, SOS, MIQP, SMT, ...
+	* Wraps a number of commercial and open-source solvers (+ a
+	  few custom ones)
+        * Uses automatic differentiation and symbolic processing to
+	  exploit problem structure (gradients, sparsity information, etc)
+* Modeling and Simulation
 	* Rigid-body dynamics including contact/collisions (hybrid+LCP) and kinematic loops
 	* Basic aerodynamics/fluid dynamics
 	* Sensor models (lidar, depth camera, imu, contact force/torque; cameras coming soon)
