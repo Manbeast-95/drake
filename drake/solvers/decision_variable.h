@@ -260,18 +260,18 @@ class VariableList {
 };
 
 /**
- * A binding on constraint type C is a mapping of the decision
- * variables onto the inputs of C.  This allows the constraint to operate
- * on a vector made up of different elements of the decision variables.
+ * Associates the type _Binding with a set of the decision
+ * variables.  This allows operations in _Binding on a on a vector made up of 
+ * different elements of the decision variables.
  */
 template <typename _Binding>
 class DecisionVariableBinding {
  public:
   DecisionVariableBinding(const _Binding& b, const VariableList& v)
-      : constraint_(b), variable_list_(v) {}
+      : binding_(b), variable_list_(v) {}
 
   DecisionVariableBinding(const _Binding& b, const VariableListRef& v)
-      : constraint_(b), variable_list_(v) {}
+      : binding_(b), variable_list_(v) {}
   template <typename U>
   DecisionVariableBinding(
       const DecisionVariableBinding<U>& b,
@@ -279,7 +279,7 @@ class DecisionVariableBinding {
           nullptr)
       : DecisionVariableBinding(b.get(), b.variable_list()) {}
 
-  const _Binding& get() const { return constraint_; }
+  const _Binding& get() const { return binding_; }
 
   const VariableList& variable_list() const { return variable_list_; }
 
@@ -335,7 +335,7 @@ class DecisionVariableBinding {
   }
 
  private:
-  _Binding constraint_;
+  _Binding binding_;
   VariableList variable_list_;
 };
 
