@@ -535,7 +535,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // TODO(hongkai.dai): Solve() function in GurobiSolver or MosekSolver
   // should return the cost directly.
   for (auto& cost_b : costs) {
-    solvers::Constraint* cost = cost_b.constraint().get();
+    solvers::Constraint* cost = cost_b.get().get();
     cost->Eval(cost_b.VariableListToVectorXd(), tmp_vec);
     output->mutable_cost(ctr).first = cost->get_description();
     output->mutable_cost(ctr).second = tmp_vec(0);
@@ -543,13 +543,13 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   for (auto& eq_b : eqs) {
-    solvers::LinearEqualityConstraint* eq = eq_b.constraint().get();
+    solvers::LinearEqualityConstraint* eq = eq_b.get().get();
     DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd() - eq->lower_bound())
                      .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
-    solvers::LinearConstraint* ineq = ineq_b.constraint().get();
+    solvers::LinearConstraint* ineq = ineq_b.get().get();
     tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
     for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - 1e-6 &&

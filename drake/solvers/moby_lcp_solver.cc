@@ -164,7 +164,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
-        binding.constraint();
+        binding.get();
     bool solved = SolveLcpLemkeRegularized(
         constraint->M(), constraint->q(), &constraint_solution);
     if (!solved) {

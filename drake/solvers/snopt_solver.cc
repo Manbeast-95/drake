@@ -202,7 +202,7 @@ void EvaluateNonlinearConstraints(
     const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic>& tx) {
   TaylorVecXd this_x;
   for (const auto& binding : constraint_list) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.get();
     size_t index = 0, num_constraints = c->num_constraints();
     for (const DecisionVariableMatrixX& v :
          binding.variable_list().variables()) {
@@ -267,7 +267,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   TaylorVecXd ty(1), this_x;
 
   for (auto const& binding : current_problem->GetAllCosts()) {
-    auto const& obj = binding.constraint();
+    auto const& obj = binding.get();
     size_t index = 0;
     for (const DecisionVariableMatrixX& v :
          binding.variable_list().variables()) {
@@ -319,7 +319,7 @@ void UpdateNumNonlinearConstraintsAndGradients(
     const std::vector<Binding>& constraint_list,
     size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
   for (auto const& binding : constraint_list) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.get();
     size_t n = c->num_constraints();
     for (const DecisionVariableMatrixX& v :
          binding.variable_list().variables()) {
@@ -335,7 +335,7 @@ void UpdateConstraintBoundsAndGradients(
     snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar,
     size_t* constraint_index, size_t* grad_index) {
   for (auto const& binding : constraint_list) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.get();
     size_t n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
@@ -381,7 +381,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
         std::numeric_limits<double>::infinity());
   }
   for (auto const& binding : prog.bounding_box_constraints()) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.get();
     const auto& lb = c->lower_bound();
     const auto& ub = c->upper_bound();
     int var_count = 0;
@@ -414,7 +414,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   size_t num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
-    num_linear_constraints += binding.constraint()->num_constraints();
+    num_linear_constraints += binding.get()->num_constraints();
   }
 
   snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
@@ -455,7 +455,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   size_t linear_constraint_index = 0;
   for (auto const& binding : linear_constraints) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.get();
     size_t n = c->num_constraints();
     size_t var_index = 0;
     Eigen::SparseMatrix<double> A_constraint = c->GetSparseMatrix();

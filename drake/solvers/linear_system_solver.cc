@@ -14,7 +14,7 @@ bool LinearSystemSolver::available() const { return true; }
 SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.constraint()->A().rows();
+    num_constraints += binding.get()->A().rows();
   }
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -30,7 +30,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
 
   size_t constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.get();
     size_t n = c->A().rows();
     size_t var_index = 0;
     for (const auto& v : binding.variable_list().variables()) {

@@ -51,7 +51,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.constraint()->A().rows();
+    num_constraints += binding.get()->A().rows();
   }
 
   // Setup the quadratic cost matrix and linear cost vector.
@@ -59,8 +59,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::VectorXd c = Eigen::VectorXd::Zero(prog.num_vars());
   for (auto const& binding : prog.quadratic_costs()) {
     size_t index = 0;
-    const auto& Q = binding.constraint()->Q();
-    const auto& b = binding.constraint()->b();
+    const auto& Q = binding.get()->Q();
+    const auto& b = binding.get()->b();
     for (const auto& v : binding.variable_list().variables()) {
       int num_v_variables = v.rows();
       DRAKE_ASSERT(v.cols() == 1);
@@ -79,7 +79,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
   int constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    auto const& bc = binding.constraint();
+    auto const& bc = binding.get();
     size_t n = bc->A().rows();
     size_t var_index = 0;
     for (const auto& v : binding.variable_list().variables()) {

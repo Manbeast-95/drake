@@ -20,7 +20,7 @@ MSKrescodee AddLinearConstraintsFromBindings(
     MSKtask_t* task, const std::vector<Binding>& constraint_list,
     bool is_equality_constraint) {
   for (const auto& binding : constraint_list) {
-    auto constraint = binding.constraint();
+    auto constraint = binding.get();
     const Eigen::MatrixXd& A = constraint->A();
     const Eigen::VectorXd& lb = constraint->lower_bound();
     const Eigen::VectorXd& ub = constraint->upper_bound();
@@ -109,7 +109,7 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
   std::vector<double> x_lb(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> x_ub(num_vars, std::numeric_limits<double>::infinity());
   for (const auto& binding : prog.bounding_box_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_count = 0;
@@ -373,7 +373,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
       return rescode;
     }
 
-    int rows = binding.constraint()->matrix_rows();
+    int rows = binding.get()->matrix_rows();
 
     AddBarVariable(rows, task);
 
@@ -385,7 +385,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
         int linear_constraint_index =
             num_linear_constraint + new_linear_constraint_count;
 
-        const auto& F = binding.constraint()->F();
+        const auto& F = binding.get()->F();
         auto F_it = F.begin();
         rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
                                   -(*F_it)(i, j), -(*F_it)(i, j));
@@ -428,7 +428,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   std::vector<Eigen::Triplet<double>> Q_lower_triplets;
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
   for (const auto& binding : prog.quadratic_costs()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     // The quadratic cost is of form 0.5*x'*Q*x + b*x.
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
@@ -464,7 +464,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   }
   for (const auto& binding : prog.linear_costs()) {
     int var_count = 0;
-    const auto& c = binding.constraint()->A();
+    const auto& c = binding.get()->A();
     for (const DecisionVariableMatrixX& var :
          binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);

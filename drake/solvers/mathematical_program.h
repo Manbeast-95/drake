@@ -19,7 +19,6 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 
 namespace drake {
@@ -196,86 +195,6 @@ class MathematicalProgramSolverInterface {
 };
 
 class MathematicalProgram {
-  /**
-   * A binding on constraint type C is a mapping of the decision
-   * variables onto the inputs of C.  This allows the constraint to operate
-   * on a vector made up of different elements of the decision variables.
-   */
-  template <typename C>
-  class Binding {
-   public:
-    Binding(const std::shared_ptr<C>& c, const VariableList& v)
-        : constraint_(c), variable_list_(v) {}
-
-    Binding(const std::shared_ptr<C>& c, const VariableListRef& v)
-        : constraint_(c), variable_list_(v) {}
-    template <typename U>
-    Binding(
-        const Binding<U>& b,
-        typename std::enable_if<std::is_convertible<
-            std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-        : Binding(b.constraint(), b.variable_list()) {}
-
-    const std::shared_ptr<C>& constraint() const { return constraint_; }
-
-    const VariableList& variable_list() const { return variable_list_; }
-
-    /**
-     * Get an Eigen vector containing all variable values. This only works if
-     * every element in variable_list_ is a column vector.
-     * @return A Eigen::VectorXd for all the variables in the variable vector.
-     */
-    Eigen::VectorXd VariableListToVectorXd() const {
-      size_t dim = 0;
-      Eigen::VectorXd X(GetNumElements());
-      for (const auto& var : variable_list_.variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        X.segment(dim, var.rows()) = GetSolution(var);
-        dim += var.rows();
-      }
-      return X;
-    }
-
-    /**
-     * Returns true iff the given @p index of the enclosing
-     * MathematicalProgram is included in this Binding.*/
-    bool ContainsVariableIndex(size_t index) const {
-      for (const auto& view : variable_list_.variables()) {
-        if (DecisionVariableMatrixContainsIndex(view, index)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    size_t GetNumElements() const {
-      // TODO(ggould-tri) assumes that no index appears more than once in the
-      // view, which is nowhere asserted (but seems assumed elsewhere).
-      return variable_list_.size();
-    }
-
-    /**
-     * Writes the elements of @p solution to the bound elements of
-     * the @p output vector.
-     */
-    void WriteThrough(const Eigen::VectorXd& solution,
-                      Eigen::VectorXd* output) const {
-      DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
-      size_t solution_index = 0;
-      for (const auto& var : variable_list_.variables()) {
-        DRAKE_ASSERT(var.cols() == 1);
-        const auto& solution_segment =
-            solution.segment(solution_index, var.rows());
-        output->segment(var(0).index(), var.rows()) = solution_segment;
-        solution_index += var.rows();
-      }
-    }
-
-   private:
-    std::shared_ptr<C> constraint_;
-    VariableList variable_list_;
-  };
-
   template <typename F>
   class ConstraintImpl : public Constraint {
     F const f_;
@@ -1062,7 +981,9 @@ class MathematicalProgram {
     required_capabilities_ |= kLinearConstraint;
     int var_dim = var_list.size();
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
-    bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, var_list));
+    bbox_constraints_.push_back(
+        DecisionVariableConstraintBinding<BoundingBoxConstraint>(con,
+                                                                 var_list));
   }
 
   /** AddBoundingBoxConstraint
@@ -1222,7 +1143,8 @@ class MathematicalProgram {
 
     auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
     linear_complementarity_constraints_.push_back(
-        Binding<LinearComplementarityConstraint>(constraint, var_list));
+        DecisionVariableConstraintBinding<LinearComplementarityConstraint>(
+            constraint, var_list));
     return constraint;
   }
 
@@ -1425,60 +1347,69 @@ class MathematicalProgram {
   /**
    * Getter for all generic costs.
    */
-  const std::vector<Binding<Constraint>>& generic_costs() const {
+  const std::vector<DecisionVariableConstraintBinding<Constraint>>&
+  generic_costs() const {
     return generic_costs_;
   }  // e.g. for snopt_user_fun
 
   /**
    * Getter for all generic constraints
    */
-  const std::vector<Binding<Constraint>>& generic_constraints() const {
+  const std::vector<DecisionVariableConstraintBinding<Constraint>>&
+  generic_constraints() const {
     return generic_constraints_;
   }  // e.g. for snopt_user_fun
 
   /**
    * Getter for linear equality constraints.
    */
-  const std::vector<Binding<LinearEqualityConstraint>>&
+  const std::vector<
+      DecisionVariableConstraintBinding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
 
   /** Getter for linear costs. */
-  const std::vector<Binding<LinearConstraint>>& linear_costs() const {
+  const std::vector<DecisionVariableConstraintBinding<LinearConstraint>>&
+  linear_costs() const {
     return linear_costs_;
   }
 
   /** Getter for quadratic costs. */
-  const std::vector<Binding<QuadraticConstraint>>& quadratic_costs() const {
+  const std::vector<DecisionVariableConstraintBinding<QuadraticConstraint>>&
+  quadratic_costs() const {
     return quadratic_costs_;
   }
 
   /** Getter for linear constraints. */
-  const std::vector<Binding<LinearConstraint>>& linear_constraints() const {
+  const std::vector<DecisionVariableConstraintBinding<LinearConstraint>>&
+  linear_constraints() const {
     return linear_constraints_;
   }
 
   /** Getter for Lorentz cone constraint */
-  const std::vector<Binding<LorentzConeConstraint>>& lorentz_cone_constraints()
-      const {
+  const std::vector<DecisionVariableConstraintBinding<LorentzConeConstraint>>&
+  lorentz_cone_constraints() const {
     return lorentz_cone_constraint_;
   }
 
   /** Getter for rotated Lorentz cone constraint */
-  const std::vector<Binding<RotatedLorentzConeConstraint>>&
+  const std::vector<
+      DecisionVariableConstraintBinding<RotatedLorentzConeConstraint>>&
   rotated_lorentz_cone_constraints() const {
     return rotated_lorentz_cone_constraint_;
   }
 
   /** Getter for positive semidefinite constraint */
-  const std::vector<Binding<PositiveSemidefiniteConstraint>>&
+  const std::vector<
+      DecisionVariableConstraintBinding<PositiveSemidefiniteConstraint>>&
   positive_semidefinite_constraints() const {
     return positive_semidefinite_constraint_;
   }
 
   /** Getter for linear matrix inequality constraint */
-  const std::vector<Binding<LinearMatrixInequalityConstraint>>&
+  const std::vector<
+      DecisionVariableConstraintBinding<LinearMatrixInequalityConstraint>>&
   linear_matrix_inequality_constraints() const {
     return linear_matrix_inequality_constraint_;
   }
@@ -1488,8 +1419,10 @@ class MathematicalProgram {
    * generic costs, then quadratic costs appended to
    * generic costs).
    */
-  std::vector<Binding<Constraint>> GetAllCosts() const {
-    std::vector<Binding<Constraint>> costlist = generic_costs_;
+  std::vector<DecisionVariableConstraintBinding<Constraint>> GetAllCosts()
+      const {
+    std::vector<DecisionVariableConstraintBinding<Constraint>> costlist =
+        generic_costs_;
     costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
     costlist.insert(costlist.end(), quadratic_costs_.begin(),
                     quadratic_costs_.end());
@@ -1500,21 +1433,24 @@ class MathematicalProgram {
    * Getter returning all linear constraints (both linear equality and
    * inequality constraints).
    */
-  std::vector<Binding<LinearConstraint>> GetAllLinearConstraints() const {
-    std::vector<Binding<LinearConstraint>> conlist = linear_constraints_;
+  std::vector<DecisionVariableConstraintBinding<LinearConstraint>>
+  GetAllLinearConstraints() const {
+    std::vector<DecisionVariableConstraintBinding<LinearConstraint>> conlist =
+        linear_constraints_;
     conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
                    linear_equality_constraints_.end());
     return conlist;
   }
 
   /** Getter for all bounding box constraints */
-  const std::vector<Binding<BoundingBoxConstraint>>& bounding_box_constraints()
-      const {
+  const std::vector<DecisionVariableConstraintBinding<BoundingBoxConstraint>>&
+  bounding_box_constraints() const {
     return bbox_constraints_;
   }
 
   /** Getter for all linear complementarity constraints.*/
-  const std::vector<Binding<LinearComplementarityConstraint>>&
+  const std::vector<
+      DecisionVariableConstraintBinding<LinearComplementarityConstraint>>&
   linear_complementarity_constraints() const {
     return linear_complementarity_constraints_;
   }
@@ -1573,27 +1509,36 @@ class MathematicalProgram {
 
  private:
   DecisionVariableVectorX variables_;
-  std::vector<Binding<Constraint>> generic_costs_;
-  std::vector<Binding<Constraint>> generic_constraints_;
-  std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
-  std::vector<Binding<LinearConstraint>> linear_costs_;
+  std::vector<DecisionVariableConstraintBinding<Constraint>> generic_costs_;
+  std::vector<DecisionVariableConstraintBinding<Constraint>>
+      generic_constraints_;
+  std::vector<DecisionVariableConstraintBinding<QuadraticConstraint>>
+      quadratic_costs_;
+  std::vector<DecisionVariableConstraintBinding<LinearConstraint>>
+      linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
-  std::vector<Binding<LinearConstraint>> linear_constraints_;
-  std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
-  std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
-  std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
-  std::vector<Binding<RotatedLorentzConeConstraint>>
+  std::vector<DecisionVariableConstraintBinding<LinearConstraint>>
+      linear_constraints_;
+  std::vector<DecisionVariableConstraintBinding<LinearEqualityConstraint>>
+      linear_equality_constraints_;
+  std::vector<DecisionVariableConstraintBinding<BoundingBoxConstraint>>
+      bbox_constraints_;
+  std::vector<DecisionVariableConstraintBinding<LorentzConeConstraint>>
+      lorentz_cone_constraint_;
+  std::vector<DecisionVariableConstraintBinding<RotatedLorentzConeConstraint>>
       rotated_lorentz_cone_constraint_;
-  std::vector<Binding<PositiveSemidefiniteConstraint>>
+  std::vector<DecisionVariableConstraintBinding<PositiveSemidefiniteConstraint>>
       positive_semidefinite_constraint_;
-  std::vector<Binding<LinearMatrixInequalityConstraint>>
+  std::vector<
+      DecisionVariableConstraintBinding<LinearMatrixInequalityConstraint>>
       linear_matrix_inequality_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
-  std::vector<Binding<LinearComplementarityConstraint>>
+  std::vector<
+      DecisionVariableConstraintBinding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
 
   size_t num_vars_;

@@ -78,7 +78,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       index += num_v_variables;
     }
 
-    binding.constraint()->Eval(this_x, ty);
+    binding.get()->Eval(this_x, ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
@@ -233,8 +233,10 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 }
 
-// We can't declare a variable of type OptimizationProblem::Binding,
-// since that's private and clang gets annoyed.
+// We can't declare a variable of type
+// MathematicalProgram::DecisionVariableBinding, since that's private and clang
+// gets annoyed.
+// TODO(sammy-tri): revisit this now that DecisionVariableBinding is public.
 template <typename _Binding>
 void WrapConstraint(const _Binding& binding, double constraint_tol,
                     nlopt::opt* opt,
@@ -242,18 +244,18 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_eq(binding.constraint().get(),
+  WrappedConstraint wrapped_eq(binding.get().get(),
                                &binding.variable_list());
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_in(binding.constraint().get(),
+  WrappedConstraint wrapped_in(binding.get().get(),
                                &binding.variable_list());
 
   bool is_pure_inequality = true;
-  const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
-  const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
+  const Eigen::VectorXd& lower_bound = binding.get()->lower_bound();
+  const Eigen::VectorXd& upper_bound = binding.get()->upper_bound();
   DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
   for (size_t i = 0; i < static_cast<size_t>(lower_bound.size()); i++) {
     if (lower_bound(i) == upper_bound(i)) {
@@ -317,7 +319,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
 
   for (auto const& binding : prog.bounding_box_constraints()) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.get();
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
     int var_count = 0;

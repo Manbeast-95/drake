@@ -26,8 +26,12 @@ class DecisionVariableScalar {
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
   /**
-   * This constructor creates a dummy placeholder, the value_ pointer
-   * is initialized to nullptr. The usage of this function is
+   * Constructs a decision variable.
+   *
+   * IF YOU ARE CALLING THIS CONSTRUCTOR DIRECTLY, YOU ARE PROBABLY DOING
+   * SOMETHING WRONG.
+   *
+   * The intended usage of this function is via MathematicalProgram, e.g.:
    * @code{.cc}
    * // Creates an optimization program object with no decision variables.
    * MathematicalProgram prog;
@@ -55,9 +59,23 @@ class DecisionVariableScalar {
    * // The first column of X is x1, the second column of X is x2.
    * X << x1, x2;
    * @endcode
+   *
+   * @param type Supports CONTINUOUS, INTEGER or BINARY.
+   * @param name The name of the variable.
+   * @param index The index of the variable in the optimization program.
+   */
+  DecisionVariableScalar(VarType type, const std::string& name, double* value,
+                         size_t index)
+      : type_(type), name_(name), value_(value), index_(index) {}
+
+  /**
+   * This constructor creates a dummy placeholder, the value_ pointer
+   * is initialized to nullptr. 
    */
   DecisionVariableScalar()
       : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
+
+  void set_value(double new_value) { *value_ = new_value; }
 
   /**
    * @return The type of the variable.
@@ -92,22 +110,7 @@ class DecisionVariableScalar {
 
   friend class MathematicalProgram;
 
-
  private:
-  /*
-   * Constructs a decision variable. We make this constructor private so that
-   * only the friend class (aka MathematicalProgram) can construct a decision
-   * variable.
-   * @param type Supports CONTINUOUS, INTEGER or BINARY.
-   * @param name The name of the variable.
-   * @param index The index of the variable in the optimization program.
-   */
-  DecisionVariableScalar(VarType type, const std::string& name, double* value,
-                         size_t index)
-      : type_(type), name_(name), value_(value), index_(index) {}
-
-  void set_value(double new_value) { *value_ = new_value; }
-
   VarType type_;
   std::string name_;
   double* value_;
@@ -255,6 +258,90 @@ class VariableList {
   std::unordered_set<DecisionVariableScalar, DecisionVariableScalarHash>
       unique_variable_indices_;
 };
+
+/**
+ * A binding on constraint type C is a mapping of the decision
+ * variables onto the inputs of C.  This allows the constraint to operate
+ * on a vector made up of different elements of the decision variables.
+ */
+template <typename _Binding>
+class DecisionVariableBinding {
+ public:
+  DecisionVariableBinding(const _Binding& b, const VariableList& v)
+      : constraint_(b), variable_list_(v) {}
+
+  DecisionVariableBinding(const _Binding& b, const VariableListRef& v)
+      : constraint_(b), variable_list_(v) {}
+  template <typename U>
+  DecisionVariableBinding(
+      const DecisionVariableBinding<U>& b,
+      typename std::enable_if<std::is_convertible<U, _Binding>::value>::type* =
+          nullptr)
+      : DecisionVariableBinding(b.get(), b.variable_list()) {}
+
+  const _Binding& get() const { return constraint_; }
+
+  const VariableList& variable_list() const { return variable_list_; }
+
+  /**
+   * Get an Eigen vector containing all variable values. This only works if
+   * every element in variable_list_ is a column vector.
+   * @return A Eigen::VectorXd for all the variables in the variable vector.
+   */
+  Eigen::VectorXd VariableListToVectorXd() const {
+    size_t dim = 0;
+    Eigen::VectorXd X(GetNumElements());
+    for (const auto& var : variable_list_.variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      X.segment(dim, var.rows()) = GetSolution(var);
+      dim += var.rows();
+    }
+    return X;
+  }
+
+  /**
+   * Returns true iff the given @p index of the enclosing
+   * MathematicalProgram is included in this Binding.*/
+  bool ContainsVariableIndex(size_t index) const {
+    for (const auto& view : variable_list_.variables()) {
+      if (DecisionVariableMatrixContainsIndex(view, index)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  size_t GetNumElements() const {
+    // TODO(ggould-tri) assumes that no index appears more than once in the
+    // view, which is nowhere asserted (but seems assumed elsewhere).
+    return variable_list_.size();
+  }
+
+  /**
+   * Writes the elements of @p solution to the bound elements of
+   * the @p output vector.
+   */
+  void WriteThrough(const Eigen::VectorXd& solution,
+                    Eigen::VectorXd* output) const {
+    DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
+    size_t solution_index = 0;
+    for (const auto& var : variable_list_.variables()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      const auto& solution_segment =
+          solution.segment(solution_index, var.rows());
+      output->segment(var(0).index(), var.rows()) = solution_segment;
+      solution_index += var.rows();
+    }
+  }
+
+ private:
+  _Binding constraint_;
+  VariableList variable_list_;
+};
+
+template <typename C>
+using DecisionVariableConstraintBinding =
+    DecisionVariableBinding<std::shared_ptr<C>>;
 
 /**
  * Given a DecisionVariableMatrix object, returns the Eigen::Matrix that

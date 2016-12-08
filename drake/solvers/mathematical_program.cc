@@ -169,7 +169,8 @@ void MathematicalProgram::AddCost(const std::shared_ptr<Constraint>& obj,
   VariableList var_list(vars);
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kGenericCost;
-  generic_costs_.push_back(Binding<Constraint>(obj, var_list));
+  generic_costs_.push_back(
+      DecisionVariableConstraintBinding<Constraint>(obj, var_list));
 }
 
 void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
@@ -179,7 +180,8 @@ void MathematicalProgram::AddCost(const std::shared_ptr<LinearConstraint>& obj,
   required_capabilities_ |= kLinearCost;
   int var_dim = var_list.size();
   DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
-  linear_costs_.push_back(Binding<LinearConstraint>(obj, var_list));
+  linear_costs_.push_back(
+      DecisionVariableConstraintBinding<LinearConstraint>(obj, var_list));
 }
 
 void MathematicalProgram::AddCost(
@@ -190,13 +192,15 @@ void MathematicalProgram::AddCost(
   required_capabilities_ |= kQuadraticCost;
   int var_dim = var_list.size();
   DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
-  quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, var_list));
+  quadratic_costs_.push_back(
+      DecisionVariableConstraintBinding<QuadraticConstraint>(obj, var_list));
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<Constraint> con,
                                         const VariableListRef& vars) {
   required_capabilities_ |= kGenericConstraint;
-  generic_constraints_.push_back(Binding<Constraint>(con, vars));
+  generic_constraints_.push_back(
+      DecisionVariableConstraintBinding<Constraint>(con, vars));
 }
 
 void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
@@ -206,7 +210,8 @@ void MathematicalProgram::AddConstraint(std::shared_ptr<LinearConstraint> con,
   required_capabilities_ |= kLinearConstraint;
   int var_dim = var_list.size();
   DRAKE_ASSERT(con->A().cols() == var_dim);
-  linear_constraints_.push_back(Binding<LinearConstraint>(con, var_list));
+  linear_constraints_.push_back(
+      DecisionVariableConstraintBinding<LinearConstraint>(con, var_list));
 }
 
 void MathematicalProgram::AddConstraint(
@@ -218,7 +223,8 @@ void MathematicalProgram::AddConstraint(
   int var_dim = var_list.size();
   DRAKE_ASSERT(con->A().cols() == var_dim);
   linear_equality_constraints_.push_back(
-      Binding<LinearEqualityConstraint>(con, var_list));
+      DecisionVariableConstraintBinding<LinearEqualityConstraint>(con,
+                                                                  var_list));
 }
 
 void MathematicalProgram::AddConstraint(
@@ -227,7 +233,7 @@ void MathematicalProgram::AddConstraint(
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kLorentzConeConstraint;
   lorentz_cone_constraint_.push_back(
-      Binding<LorentzConeConstraint>(con, var_list));
+      DecisionVariableConstraintBinding<LorentzConeConstraint>(con, var_list));
 }
 
 std::shared_ptr<LorentzConeConstraint>
@@ -244,7 +250,8 @@ void MathematicalProgram::AddConstraint(
   DRAKE_ASSERT(var_list.column_vectors_only());
   required_capabilities_ |= kRotatedLorentzConeConstraint;
   rotated_lorentz_cone_constraint_.push_back(
-      Binding<RotatedLorentzConeConstraint>(con, var_list));
+      DecisionVariableConstraintBinding<RotatedLorentzConeConstraint>(
+          con, var_list));
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>
@@ -320,7 +327,8 @@ void MathematicalProgram::AddConstraint(
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   DRAKE_ASSERT(drake::math::IsSymmetric(symmetric_matrix_var));
   positive_semidefinite_constraint_.push_back(
-      Binding<PositiveSemidefiniteConstraint>(con, {symmetric_matrix_var}));
+      DecisionVariableConstraintBinding<PositiveSemidefiniteConstraint>(
+          con, {symmetric_matrix_var}));
 }
 
 std::shared_ptr<PositiveSemidefiniteConstraint>
@@ -340,7 +348,8 @@ void MathematicalProgram::AddConstraint(
   DRAKE_ASSERT(var_list.column_vectors_only());
   DRAKE_ASSERT(con->F().size() == var_list.size() + 1);
   linear_matrix_inequality_constraint_.push_back(
-      Binding<LinearMatrixInequalityConstraint>(con, var_list));
+      DecisionVariableConstraintBinding<LinearMatrixInequalityConstraint>(
+          con, var_list));
 }
 
 std::shared_ptr<LinearMatrixInequalityConstraint>

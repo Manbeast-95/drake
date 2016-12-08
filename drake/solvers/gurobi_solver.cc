@@ -184,7 +184,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   std::vector<Eigen::Triplet<double>> Q_nonzero_coefs;
   std::vector<Eigen::Triplet<double>> b_nonzero_coefs;
   for (const auto& binding : prog.quadratic_costs()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     const int constraint_variable_dimension = binding.GetNumElements();
     const Eigen::MatrixXd& Q = constraint->Q();
     const Eigen::VectorXd& b = constraint->b();
@@ -229,7 +229,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
 
   // Add linear cost in prog.linear_costs() to the aggregated cost.
   for (const auto& binding : prog.linear_costs()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
     for (const DecisionVariableMatrixX& var :
@@ -295,7 +295,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
                              double sparseness_threshold) {
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     int var_dim = binding.GetNumElements();
     // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
@@ -316,7 +316,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   }
 
   for (const auto& binding : prog.linear_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     int var_dim = binding.GetNumElements();
     // variable_indices[i] is the index of the i'th variable
     std::vector<int> variable_indices;
@@ -411,7 +411,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   }
 
   for (const auto& binding : prog.bounding_box_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.get();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_idx = 0;
