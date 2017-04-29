@@ -24,6 +24,13 @@ target_link_libraries(_pydrake_ik PRIVATE drakeIK Eigen3::Eigen)
 target_compile_options(_pydrake_ik PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_ik DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
 
+
+pybind11_add_module(_pydrake_systems pydrake_systems.cc)
+target_link_libraries(_pydrake_systems PRIVATE drakeSystemFramework drakeSystemPrimitives)
+set_target_properties(_pydrake_systems PROPERTIES OUTPUT_NAME "systems")
+target_compile_options(_pydrake_systems PRIVATE "-fvisibility=default")
+install(TARGETS _pydrake_systems DESTINATION ${PYDRAKE_INSTALL_DIR})
+
 pybind11_add_module(_pydrake_symbolic pydrake_symbolic.cc)
 target_link_libraries(_pydrake_symbolic PRIVATE drakeOptimization Eigen3::Eigen)
 set_target_properties(_pydrake_symbolic PROPERTIES OUTPUT_NAME "symbolic")
