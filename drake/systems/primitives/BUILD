@@ -33,6 +33,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "system_with_additive_noise",
+    srcs = ["system_with_additive_noise.cc"],
+    hdrs = ["system_with_additive_noise.h"],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "adder",
     srcs = ["adder.cc"],
     hdrs = ["adder.h"],
