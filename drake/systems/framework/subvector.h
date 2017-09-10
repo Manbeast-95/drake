@@ -55,6 +55,11 @@ class Subvector : public VectorBase<T> {
     return vector_->GetAtIndex(first_element_ + index);
   }
 
+ protected:
+  Subvector<T>* DoClone() const override {
+    DRAKE_ABORT_MSG("Subvectors should not be cloned.");
+  }
+
  private:
   VectorBase<T>* vector_{nullptr};
   int first_element_{0};

@@ -16,7 +16,7 @@ namespace systems {
 
 /// Supervector is a concrete class template that implements
 /// VectorBase by concatenating multiple VectorBases, which it
-/// does not own.
+/// may not own.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
@@ -36,6 +36,21 @@ class Supervector : public VectorBase<T> {
     }
   }
 
+  /// Constructs a supervector consisting of all the vectors
+  /// in subvectors, with ownership transferred to the supervector.
+  explicit Supervector(std::vector<std::unique_ptr<VectorBase<T>>>& subvectors)
+    : vectors_(subvectors.size()), vector_storage_(subvectors.size())
+  {
+    int sum = 0;
+    for (int i=0; i<static_cast<int>(subvectors.size()); i++) {
+      vector_storage_[i] = std::move(subvectors[i]);
+      vectors_[i] = vector_storage_[i].get();
+      sum += vectors_[i]->size();
+      lookup_table_.push_back(sum);
+    }
+  }
+
+
   int size() const override {
     return lookup_table_.empty() ? 0 : lookup_table_.back();
   }
@@ -49,6 +64,16 @@ class Supervector : public VectorBase<T> {
     const auto target = GetSubvectorAndOffset(index);
     return target.first->GetAtIndex(target.second);
   }
+
+ protected:
+  Supervector<T>* DoClone() const override {
+    std::vector<std::unique_ptr<VectorBase<T>>> vector_clones(vectors_.size());
+    for (int i=0; i < static_cast<int>(vectors_.size()); i++) {
+      vector_clones[i] = vectors_[i]->Clone();
+    }
+    return new Supervector<T>(vector_clones);
+  }
+
 
  private:
   // Given an index into the supervector, returns the subvector that
@@ -93,6 +118,9 @@ class Supervector : public VectorBase<T> {
   // For example, if the sizes of the constituent vectors are [1, 3, 5],
   // the lookup table is [1, 4, 9].
   std::vector<int> lookup_table_;
+
+  // Optional storage for the vectors; may be nullptrs.
+  std::vector<std::unique_ptr<VectorBase<T>>> vector_storage_;
 };
 
 }  // namespace systems

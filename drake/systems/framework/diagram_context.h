@@ -252,6 +252,7 @@ class DiagramContext : public Context<T> {
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
   /// TODO(david-german-tri): Rename to get_mutable_subsystem_context.
+  /// TODO(russt): This should return a Context<T>* (not a reference).
   Context<T>& GetMutableSubsystemContext(SystemIndex index) {
     DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(contexts_[index] != nullptr);
