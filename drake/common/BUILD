@@ -186,6 +186,12 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "random_vector",
+    srcs = ["random_vector.cc"],
+    hdrs = ["random_vector.h"],
+)
+
 # Miscellaneous utilities.
 
 DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
@@ -351,15 +357,15 @@ py_binary(
 
 install(
     name = "install",
-    targets = [":resource_tool"],
+    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
+    data_dest = "share/drake",
+    guess_data = "WORKSPACE",
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for putting programs into libexec and including the workspace and/or
     # package name in the installed path.  For now, we'll just specify it
     # manually.
     runtime_dest = "libexec/drake/drake/common",
-    data_dest = "share/drake",
-    guess_data = "WORKSPACE",
-    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
+    targets = [":resource_tool"],
 )
 
 # === test/ ===
